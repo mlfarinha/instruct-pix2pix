@@ -69,10 +69,10 @@ def COCODataset(coco_dataDir, coco_dataType, coco_face_detection_thres, device):
 
                 if boxes is not None:
                     if len(boxes) == 1: # images with more than 2 faces may not work very well when swapping the face
-                        if probs[0] > self.coco_face_detection_thres: # we only want images where we can clearly identify a face
+                        if probs[0] > coco_face_detection_thres: # we only want images where we can clearly identify a face
                             images_path.append(img_path)
                         else:
-                            print(f"Face of image {img['file_name']} detected with probability < {self.coco_face_detection_thres}.")
+                            print(f"Face of image {img['file_name']} detected with probability < {coco_face_detection_thres}.")
                     else:
                         print(f"Two or more faces detected in image {img['file_name']}.")
                 else:
@@ -123,13 +123,13 @@ def load_model_from_config(config, ckpt, vae_ckpt=None, verbose=False):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('--coco-dataDir', type=str, required=True, default=None,
+    parser.add_argument('--coco-dataDir', type=str, default=None,
                         help="""Parent directory where coco folder is located.""")
-    parser.add_argument('--coco-dataType', type=str, required=True, default=None,
+    parser.add_argument('--coco-dataType', type=str, default=None,
                         help="""Folder containing COCO images (found in ./coco/images/).""")
     parser.add_argument('--coco-face-detection-thres', type=float, default=0.98,
                         help="""MTCNN face detection threshold for COCO images.""")
-    parser.add_argument('--img_paths_file', type=str, default=None,
+    parser.add_argument('--img-paths-file', type=str, default=None,
                         help="""File with path to images to be edited.""")
     parser.add_argument("--resolution", default=512, type=int)
     parser.add_argument("--steps", default=100, type=int)
@@ -146,6 +146,8 @@ def main():
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Device: ", device)
+    print("Count gpus: ", torch.cuda.device_count())
 
     print("Configuring model")
     config = OmegaConf.load(args.config)
@@ -156,13 +158,14 @@ def main():
     null_token = model.get_learned_conditioning([""])
 
     # Creating directory to save images
-    save_dir = f"{args.out_dir}/ip2p_coco_{args.resolution}res_{args.steps}steps_{args.cfg_text}text_{args.cfg_image}img"
+    save_dir = f"{args.out_dir}/ip2p_coco_{args.resolution}res_{args.steps}steps_{str(args.cfg_text).replace('.','')}text_{str(args.cfg_image).replace('.','')}img"
     os.makedirs(save_dir, exist_ok=True)
+    print("Edited images will be saved to ", save_dir)
 
     if args.coco_dataDir is not None and args.coco_dataType is not None and args.img_paths_file is None:
         print("Creating list of COCO image paths.")
         coco_img_paths = COCODataset(args.coco_dataDir, args.coco_dataType, args.coco_face_detection_thres, device)
-        file = open('img_paths.txt','w')
+        file = open(os.path.join(save_dir, "image_paths.txt"),"w")
         for path in coco_img_paths:
 	        file.write(path+"\n")
         file.close()
@@ -175,7 +178,7 @@ def main():
         raise ValueError("please provide in the command line arguments either (coco_dataDir, coco_dataType) or img_paths_file.")
 
     # Length of dataset
-    print("Number of COCO images to be edited: ", len(coco_img_paths))
+    print("Number of COCO images to be edited: %i", len(coco_img_paths))
 
     for img_path in tqdm(coco_img_paths):
 
