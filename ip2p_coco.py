@@ -158,7 +158,7 @@ def main():
     null_token = model.get_learned_conditioning([""])
 
     # Creating directory to save images
-    save_dir = f"{args.out_dir}/ip2p_coco_{args.resolution}res_{args.steps}steps_{str(args.cfg_text).replace('.','')}text_{str(args.cfg_image).replace('.','')}img"
+    save_dir = f"{args.out_dir}/ip2p-coco/res{args.resolution}_steps{args.steps}_text{str(args.cfg_text).replace('.','')}_img{str(args.cfg_image).replace('.','')}"
     os.makedirs(save_dir, exist_ok=True)
     print("Edited images will be saved to ", save_dir)
 
@@ -177,10 +177,19 @@ def main():
     else:
         raise ValueError("please provide in the command line arguments either (coco_dataDir, coco_dataType) or img_paths_file.")
 
+    # List of image edits
+    edits_file = open(f"{args.edits_file}", "r")
+    edits = [line.rstrip() for line in edits_file]
+    
     # Length of dataset
-    print("Number of COCO images to be edited: %i", len(coco_img_paths))
+    print("Number of COCO images to be edited: ", len(coco_img_paths))
 
-    for img_path in tqdm(coco_img_paths):
+    # Number of edits
+    print("Number of image edit instructions: ", len(edits))
+
+    for img_path in enumrate(tqdm(coco_img_paths)):
+
+        print(f"Image {i}/{len(coco_img_paths)}") 
 
         img_id = os.path.splitext(os.path.split(img_path)[-1])[0]
 
@@ -191,21 +200,16 @@ def main():
         factor = math.ceil(min(width, height) * factor / 64) * 64 / min(width, height)
         width = int((width * factor) // 64) * 64
         height = int((height * factor) // 64) * 64
-        input_image = ImageOps.fit(input_image, (width, height), method=Image.Resampling.LANCZOS)
-
-        if args.edits_file == "":
-            input_image.save(args.output)
-            return
+        input_image_cpu = ImageOps.fit(input_image, (width, height), method=Image.Resampling.LANCZOS)
 
         # Loop through the list of image edits
-        edits_file = open(f"{args.edits_file}", "r")
-        edits = [line.rstrip() for line in edits_file]
-        for i, edit in enumerate(tqdm(edits)):
+        for i, edit in enumerate(edits):
 
             with torch.no_grad(), autocast("cuda"), model.ema_scope():
+
                 cond = {}
                 cond["c_crossattn"] = [model.get_learned_conditioning([edit])]
-                input_image = 2 * torch.tensor(np.array(input_image)).float() / 255 - 1
+                input_image = 2 * torch.tensor(np.array(input_image_cpu)).float() / 255 - 1
                 input_image = rearrange(input_image, "h w c -> 1 c h w").to(model.device)
                 cond["c_concat"] = [model.encode_first_stage(input_image).mode()]
 
@@ -228,8 +232,7 @@ def main():
                 x = torch.clamp((x + 1.0) / 2.0, min=0.0, max=1.0)
                 x = 255.0 * rearrange(x, "1 c h w -> h w c")
                 edited_image = Image.fromarray(x.type(torch.uint8).cpu().numpy())
-            edited_image.save(os.path.join(save_dir, img_id + f"_edit{i}.jpg"))
-            break
+            edited_image.save(os.path.join(save_dir, img_id + f"_edit{i:02}.jpg"))    
 
 
 if __name__ == "__main__":
