@@ -187,9 +187,9 @@ def main():
     # Number of edits
     print("Number of image edit instructions: ", len(edits))
 
-    for img_path in enumrate(tqdm(coco_img_paths)):
+    for j, img_path in enumerate(tqdm(coco_img_paths)):
 
-        print(f"Image {i}/{len(coco_img_paths)}") 
+        print(f"Image {j}/{len(coco_img_paths)}") 
 
         img_id = os.path.splitext(os.path.split(img_path)[-1])[0]
 
