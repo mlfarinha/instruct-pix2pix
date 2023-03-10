@@ -1,6 +1,13 @@
-instruct-pix2pix/stable_diffusion/ldm/__pycache__
-instruct-pix2pix/stable_diffusion/ldm/models
-instruct-pix2pix/stable_diffusion/ldm/modules
+/stable_diffusion/ldm/__pycache__
+/stable_diffusion/ldm/models
+/stable_diffusion/ldm/models/*
+/stable_diffusion/ldm/models/diffusion/*
+/stable_diffusion/ldm/modules
+/stable_diffusion/ldm/modules/*
+/stable_diffusion/ldm/modules/diffusionmodules/
+/stable_diffusion/ldm/modules/distributions/
+/stable_diffusion/ldm/modules/encoders/
+
 /checkpoints
 
 job*.py
