@@ -1,0 +1,6 @@
+instruct-pix2pix/stable_diffusion/ldm/__pycache__
+instruct-pix2pix/stable_diffusion/ldm/models
+instruct-pix2pix/stable_diffusion/ldm/modules
+/checkpoints
+
+job*.py
