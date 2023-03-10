@@ -189,7 +189,7 @@ def main():
 
     for j, img_path in enumerate(tqdm(coco_img_paths)):
 
-        print(f"Image {j}/{len(coco_img_paths)}") 
+        print(f"Image {j+1}/{len(coco_img_paths)}") 
 
         img_id = os.path.splitext(os.path.split(img_path)[-1])[0]
 
